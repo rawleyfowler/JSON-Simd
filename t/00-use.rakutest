@@ -1,0 +1,11 @@
+use Test;
+
+plan 3;
+
+use-ok "JSON::Simd";
+
+use JSON::Simd;
+my $json-result = JSON::Simd::parse('t/json/twitter.json'.IO.slurp.chomp);
+
+ok $json-result, 'Did parse succeed?';
+is $json-result<statuses>[0]<metadata><result_type>, "recent", 'Did parse content succeed?';

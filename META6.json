@@ -1,0 +1,21 @@
+{
+	"auth": "zef:rawleyfowler",
+	"build-depends": [
+		"Distribution::Builder::Cmake"
+	],
+	"builder": "Distribution::Builder::Cmake",
+	"build": {
+		"lib": "simd-json",
+		"src-dir": "cc"
+	},
+	"depends": [ ],
+	"description": "Insanely fast JSON parsing using bindings to C++ and simdjson",
+	"name": "JSON-Simd",
+	"provides": {
+		"JSON::Simd": "lib/Json/Simd.rakumod"
+	},
+	"resources": [
+		"libraries/simd-json"
+	],
+	"version": "0.0.1"
+}

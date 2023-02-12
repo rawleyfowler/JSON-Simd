@@ -1,0 +1,4 @@
+cc/build/
+.precomp
+*.so*
+CMakeCache.txt
