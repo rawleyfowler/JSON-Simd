@@ -20,11 +20,4 @@ tasks:
     code: |
       set -e
       sudo apt-get update
-      sudo apt-get install -y cmake g++ make
-  -
-    name: submodules
-    language: Bash
-    code: |
-      cd source/
-      git submodule update --recursive --remote
-      
+      sudo apt-get install -y cmake g++ make      
