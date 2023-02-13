@@ -22,8 +22,6 @@ jobs:
       - uses: Raku/setup-raku@v1
         with:
           raku-version: ${{ matrix.raku-version }}
-      - name: Install simdjson
-        run: git submodule update --recursive --remote
       - name: Install CMake
         run: sudo apt install cmake g++
       - name: Install Dependencies
