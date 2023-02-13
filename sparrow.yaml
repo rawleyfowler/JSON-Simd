@@ -13,7 +13,6 @@ tasks:
     depends:
       -
         name: deps
-        name: submodules
   -
     name: deps
     language: Bash
