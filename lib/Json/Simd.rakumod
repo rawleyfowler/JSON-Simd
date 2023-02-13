@@ -29,18 +29,14 @@ my sub add-value(Str:D $name, Any $value) {
 	my $location = $*JSON;
 	my @name-parts = $name.split('␟', :skip-empty);
 	for @name-parts.head: *-1 {
-		if nqp::istype($location, Array) {
-			$location = $location[$_.split('␝', :skip-empty)[0].Int];
-		} else {
-			$location := $location{$_};
-		}
+		nqp::if(nqp::istype($location, Array),
+				nqp::stmts($location = $location[$_.split('␝', :skip-empty)[0].Int]),
+				$location = $location{$_});
 	}
 
-	if nqp::istype($location, Array) {
-		$location.push: $value;
-	} else {
-		$location{@name-parts[*-1]} = $value;
-	}
+	nqp::if(nqp::istype($location, Array),
+			nqp::stmts($location.push: $value),
+			$location{@name-parts[*-1]} = $value);
 }
 
 # These could all be replaced by a single func, but,
