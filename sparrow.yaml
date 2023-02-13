@@ -11,6 +11,7 @@ tasks:
       git submodule init
       git submodule update
       zef install . --deps-only --test-depends --build-depends --/test -to=home
+      zef build .
       zef test -v .
     depends:
       -
