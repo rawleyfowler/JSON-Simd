@@ -13,11 +13,18 @@ tasks:
     depends:
       -
         name: deps
+        name: submodules
   -
     name: deps
     language: Bash
     code: |
       set -e
-      git submodule update --recursive --remote
       sudo apt-get update
       sudo apt-get install -y cmake g++ make
+  -
+    name: submodules
+    language: Bash
+    code: |
+      cd source/
+      git submodule update --recursive --remote
+      
