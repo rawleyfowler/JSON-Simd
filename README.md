@@ -7,6 +7,12 @@ as time goes on I think this dist should perform better (once I get around to us
 
 ## How to install
 
+#### Latest nightly
+```bash
+zef install -v https://github.com/rawleyfowler/JSON-Simd.git
+```
+
+#### Latest stable
 ```bash
 zef install JSON-Simd
 ```
