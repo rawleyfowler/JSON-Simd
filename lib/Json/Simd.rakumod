@@ -19,19 +19,33 @@ sub parse_json(Str:D $json) returns int32 is native($lib-location) { * }
 our sub parse(Str:D $json) is export {
 	my $*JSON = Nil;
 	if parse_json($json) == 0 {
-		return $*JSON;
-	} else { return Nil; }
+		if nqp::istype($*JSON, Array) {
+			return @$*JSON;
+		} elsif nqp::istype($*JSON, Associative) {
+			return %$*JSON;
+		} else {
+			return $*JSON;			
+		}
+	} else { return Nil }
 }
 
 my sub add-value(Str:D $name, Any $value) {
-	without $*JSON { $*JSON = $value; return }
+	nqp::unless($*JSON.defined,
+			nqp::stmts(($*JSON = $value),
+					   (return)));
+
+	state @prev-name = $name.split('␟', :skip-empty);
 
 	my $location = $*JSON;
 	my @name-parts = $name.split('␟', :skip-empty);
-	for @name-parts.head: *-1 {
-		nqp::if(nqp::istype($location, Array),
-				nqp::stmts($location = $location[$_.split('␝', :skip-empty)[0].Int]),
-				$location = $location{$_});
+	unless (@prev-name.elems == @name-parts.elems) &&
+	       (@prev-name.head(*-1) eqv @name-parts.head(*-1)) {
+		@prev-name = @name-parts;
+		for @name-parts.head: *-1 {
+			nqp::if(nqp::istype($location, Array),
+					nqp::stmts($location = $location[$_.split('␝', :skip-empty)[0].Int]),
+					$location = $location{$_});
+		}
 	}
 
 	nqp::if(nqp::istype($location, Array),
