@@ -32,7 +32,7 @@ void set_type_funcs(void (*add_uint64_raku)(const char *name, uint64_t val),
 }
 }
 
-static void convert_to_raku(simdjson::dom::element element, std::string location) {
+static void convert_to_raku(const simdjson::dom::element &element, const std::string location) {
   switch (element.type()) {
   case simdjson::dom::element_type::ARRAY: {
 	add_array(location.c_str());
@@ -60,7 +60,7 @@ static void convert_to_raku(simdjson::dom::element element, std::string location
 	break;
   case simdjson::dom::element_type::STRING:
 	if (!element.get_string().error()) {
-	  std::string str(element.get_string().value().data());
+	  const std::string str(element.get_string().value().data());
 	  add_str(location.c_str(), str.c_str());
 	}
 	break;
@@ -74,10 +74,10 @@ static void convert_to_raku(simdjson::dom::element element, std::string location
 }
 
 extern "C" {
-int parse_json(char* json) {
-  simdjson::dom::parser parser;
+int parse_json(const char* json) {
+  const std::string str(json);
   simdjson::dom::element doc;
-  std::string str(json);
+  simdjson::dom::parser parser;
   auto error = parser.parse(str).get(doc);
   if (error == simdjson::SUCCESS) {
 	convert_to_raku(doc, "");
