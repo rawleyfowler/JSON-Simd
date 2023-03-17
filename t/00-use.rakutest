@@ -6,12 +6,12 @@ use-ok "JSON::Simd";
 
 use JSON::Simd;
 
-my $a = JSON::Simd::parse('[ { "abc": "efg" }, { "abc": "efg" } ]');
+my $a = from-json('[ { "abc": "efg" }, { "abc": "efg" } ]');
 is $a[0], { abc => "efg" }, 'Did parse OK?';
 is $a[1], { abc => "efg" }, 'Did parse OK2?';
 is $a[0]<abc>, "efg", 'Did parse OK3?';
 
 # Really big JSON
-my $json-result = JSON::Simd::parse('t/json/twitter.json'.IO.slurp.chomp);
+my $json-result = from-json('t/json/twitter.json'.IO.slurp.chomp);
 ok $json-result, 'Did parse succeed?';
 is $json-result<statuses>[0]<metadata><result_type>, "recent", 'Did parse content succeed?';

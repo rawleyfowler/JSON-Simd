@@ -1,77 +1,110 @@
-#include <algorithm>
-#include <map>
+#include <cstdint>
 #include <cstdlib>
-#include <memory>
 #include <string>
 #include <string_view>
-#include <random>
-#include <sstream>
+#include <vector>
 
 #include "lib/simdjson/singleheader/simdjson.h"
 
-namespace uuid {
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_int_distribution<> dis(0, 5);
-static std::uniform_int_distribution<> dis2(7, 17);
+class simdjson_element;
+struct simdjson_kv;
+struct simdjson_result;
 
-std::string generate_uuid_v4() {
-  std::stringstream ss;
-  int i;
-  ss << std::hex;
-  for (i = 0; i < 8; i++) {
-    ss << dis(gen);
-  }
-  ss << "-";
-  for (i = 0; i < 4; i++) {
-    ss << dis(gen);
-  }
-  ss << "-4";
-  for (i = 0; i < 3; i++) {
-    ss << dis(gen);
-  }
-  ss << "-";
-  ss << dis2(gen);
-  for (i = 0; i < 3; i++) {
-    ss << dis(gen);
-  }
-  ss << "-";
-  for (i = 0; i < 12; i++) {
-    ss << dis(gen);
-  };
-  return ss.str();
-}
+struct simdjson_kv {
+  const char *key;
+  simdjson_element *element;
+
+  void free();
+  simdjson_kv(const char *key, simdjson_element *elem);
+  ~simdjson_kv();
+};
+
+void simdjson_kv::free() { delete this; }
+
+simdjson_kv::simdjson_kv(const char *key, simdjson_element *elem)
+  : element{elem}, key{key} {}
+
+simdjson_kv::~simdjson_kv() {
+  std::free(this->element);
 }
 
-static std::shared_ptr<std::map<std::string, simdjson::dom::element>> parsed_json;
+class simdjson_element {
+  const char *type;
+  simdjson::dom::element child;
+public:
+  simdjson_element(simdjson::dom::element child, const char *type);
+  ~simdjson_element();
+  virtual uint64_t get_uint64();
+  virtual int64_t get_int64();
+  virtual const char *get_string();
+  virtual bool get_bool();
+  virtual double get_double();
+  virtual const char *get_type();
+  virtual simdjson_kv **to_kv();
+  virtual simdjson_element **to_array();
+  virtual void free();
+};
+
+simdjson_element::simdjson_element(simdjson::dom::element child, const char *type)
+    : child{child}, type{type} {}
+
+uint64_t simdjson_element::get_uint64() {
+  return this->child.get_uint64().take_value();
+}
+int64_t simdjson_element::get_int64() {
+  return this->child.get_int64().take_value();
+}
+const char *simdjson_element::get_string() {
+  return this->child.get_c_str().take_value();
+}
+bool simdjson_element::get_bool() {
+  return this->child.get_bool().take_value();
+}
+double simdjson_element::get_double() {
+  return this->child.get_double().take_value();
+}
+const char *simdjson_element::get_type() { return (char *)this->child.type(); }
+simdjson_kv **simdjson_element::to_kv() {
+  if (this->type[0] != '{')
+    return nullptr;
+  
+  auto kvs = (simdjson_kv **) malloc(this->child.get_object().size());
+  size_t i = 0;
+  for (simdjson::dom::key_value_pair kv : this->child.get_object()) {
+    auto elem = new simdjson_element(kv.value, (const char *) kv.value.type());
+    kvs[i++] = new simdjson_kv(std::string(kv.key).c_str(), elem);
+  }
+
+  return kvs;
+}
+simdjson_element **simdjson_element::to_array() {
+  if (this->type[0] != '[')
+    return nullptr;
+
+  auto elements = (simdjson_element **) malloc(this->child.get_array().size());
+  size_t i = 0;
+  for (simdjson::dom::element elem : this->child.get_array()) {
+    elements[i++] = new simdjson_element(elem, (const char *) elem.type());
+  }
+
+  return elements;
+}
 
 extern "C" {
-typedef struct parse_result {
-  const char *message;
-  const char *status;
-} parse_result;
 
-void delete_parsed_json(const char *uuid) {
-  parsed_json.get()->erase(uuid);
-  parsed_json.reset();
-}
+typedef struct simdjson_result {
+  simdjson_element doc;
+  uint32_t error;
+} simdjson_result;
 
-const parse_result parse_json(const char *json) {
+void free(void *ptr) { std::free(ptr); }
+
+simdjson_result parse_json(const char *json) {
   const std::string str(json);
   simdjson::dom::element doc;
   simdjson::dom::parser parser;
   auto error = parser.parse(str).get(doc);
-  parse_result result;
-  if (error == simdjson::SUCCESS) {
-    std::string uuid = uuid::generate_uuid_v4();
-    (*parsed_json.get())[uuid] = doc;
-    parsed_json.reset();
-    result.message = uuid.c_str();
-    result.status  = "OK\0";
-  } else {
-    result.message = "FAILED TO PARSE JSON\0";
-    result.status  = "ERROR\0";
-  }
-  return result;
+  simdjson_element element(doc, (char *)doc.type());
+  return (simdjson_result){.doc = element, .error = error};
 }
 }
